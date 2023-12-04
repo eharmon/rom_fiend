@@ -1554,7 +1554,8 @@ if {$dir_start != 0} {
 		goto 0
 		section "System ROM"
 		sectioncollapse
-		uint32 -hex "Checksum"
+		set checksum [uint32 -hex "Checksum"]
+		set hex_checksum [format %x $checksum]
 		move 4
 		section "Version"
 		set rom_ver [uint8 -hex "Major"]
@@ -1566,6 +1567,25 @@ if {$dir_start != 0} {
 		if {$rom_ver >= 0x6} {
 			goto 0x40
 			uint32 "ROM Size"
+			set filename "rom_maps/$hex_checksum"
+			if { [file exists $filename] == 1 } {
+				section "Symbols"
+				sectioncollapse
+				set map [open $filename "r"]
+				set lines [split [read $map] "\n"]
+				close $map
+				foreach line $lines {
+					# Skip empty lines
+					if {$line == ""} {
+						continue
+					}
+					set data [split $line " "]
+					scan [lindex $data 1] %x raw_offset
+					goto $raw_offset
+					entry [lindex $data 0] [lindex $data 1] 1
+				}
+				endsection
+			}
 			goto 0x1A
 			set rsrc_offset [uint32 "Resource Offset"]
 			# Unlike DeclROM portions, this is an offset from the base

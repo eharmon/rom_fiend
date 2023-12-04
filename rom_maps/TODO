@@ -1,0 +1,17 @@
+The following ROMs are missing, despite symbol tables:
+
+Unknown Checksum
+----------------
+LC520ROM.lst.txt
+
+Multiple ROM versions, unclear which matches
+--------------------------------------------
+MacIIROM.lst.txt
+MacIIciROM.lst.txt
+MacLCIIROM.lst.txt
+MacPlusROM.lst.txt
+MacSEROM.lst.txt
+
+Duplicate
+---------
+PB140ROM.lst.txt -- This is the same as the Quadra 700 ROM, so it is used for this checksum.
