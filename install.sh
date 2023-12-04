@@ -6,6 +6,7 @@ echo "Updating submodules..."
 git submodule update --init
 
 echo "Creating symlinks..."
+mkdir -p ~/Library/Application\ Support/com.ridiculousfish.HexFiend/Templates
 ln -sf "$SCRIPT_DIR/Mac ROM.tcl" ~/Library/Application\ Support/com.ridiculousfish.HexFiend/Templates
 ln -sf "$SCRIPT_DIR/rom_maps" ~/Library/Application\ Support/com.ridiculousfish.HexFiend/Templates
 
