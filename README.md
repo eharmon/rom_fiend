@@ -1,9 +1,10 @@
 # ROM Fiend: Macintosh DeclROM and System ROM file template for Hex Fiend
 
 This repository includes a file template for [Hex Fiend](http://hexfiend.com), allowing you to
-easily inspect and modify ROMs for classic Macintosh (68k and Old World PowerPC).
+easily inspect and modify ROMs for classic Macintosh.
 
-It supports most commonly used ROMs for 68020+ Macs, including the System ROM.
+It supports most commonly used ROMs for 68k and Old World PowerPC Macs, including NuBus and System
+ROMs in various capabilities.
 
 ## Installation
 For a basic installataion, copy "Mac ROM.tcl" to your Hex Fiend template library.
@@ -36,23 +37,30 @@ nesting.
 
 ## Supported Data Types
 - Declaration ROM (DeclROM)
-    - NuBus and PDS peripherals on 68020+ Macs. Also used for System ROMs before 4.0 (most
-      machines released before the PowerBook 160).
+    - NuBus and PDS peripherals on 68020+ Macs. Also used for Universal System ROMs before 4.0
+      (most machines released after the IIcx and before the PowerBook 160).
     - These define plug-and-play parameters for devices, including memory mappings, driver support,
       and basic identification.
     - Almost all data types are supported. Unsupported entries are marked with "TODO" in the Hex
       Fiend view.
+    - Driver functions have approximated data lengths as these are difficult to compute
+      automatically.
 - Extended DeclROM
-    - Board definitions in System ROMs after the PowerBook 160.
+    - Board definitions in Universal System ROMs after the PowerBook 160.
     - This is a superset of the normal DeclROM, allowing for multiple data directories to be
       defined which are selected from on system boot.
     - Supports the same data types as regular DeclROMs.
+- System ROM Header
+    - Basic informtion about the System ROM. Supported for all System ROMs from the 128k to the
+      final Old World ROMs.
 - System ROM Resources
     - Toolbox resources including cursors, sounds, drivers, and some device support definitions.
+    - Supported for all Universal System ROMs (IIci and newer) and Old World ROMs.
 - System ROM Symbols
     - The table of symbols as defined in MPW 3.5, extracted by @cy384. This points to the address
-      specified by the symbol, with no length, as that cannot be easily determined without
+      specified by the symbol, with no body, as that cannot be easily determined without
       decompiling each function.
+    - Supports a subset of 68k ROMs. The setion will only be present if matching symbols are found.
 
 ## Unsupported Data Types
 - System ROM tables
