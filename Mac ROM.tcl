@@ -280,12 +280,14 @@ proc resolve_ctype {category ctype} {
 					# SCii RNIS
 					set type "ISDN (27)"
 				}
+				30 {
+					# KMW Systems TwinAxcess
+					set type "IBM 5250/Twinax (30)"
+				}
 				default {
 					# Possible others:
 					# Parallel
 					# MIDI
-					# 3270
-					# 5250
 					set type "Unknown ($ctype)"
 				}
 			}
