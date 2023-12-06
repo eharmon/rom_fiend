@@ -985,6 +985,15 @@ proc block_transfer_info {offset} {
 	goto $temp_location
 }
 
+# Determine if an offset is logical -- if it doesn't offset far enough to leave the directory entry, it's not valid
+proc valid_rsrc_dir_offset {offset} {
+	if {$offset > 0 && $offset < 4} {
+		return 0
+	} else {
+		return 1
+	}
+}
+
 # Parse the sResourceDir
 proc parse_rsrc_dir {directory} {
 	# Jump into the directory and start parsing it's entries
@@ -1017,7 +1026,7 @@ proc parse_rsrc_dir {directory} {
 
 			set sub_rsrc_offset 0x01
 			set sub_rsrc_type 0x00
-			set human_category "" 
+			set human_category ""
 
 			# Loop over the sResources in this entry
 			while {[expr $sub_rsrc_offset != 0x000000 && $sub_rsrc_type != 0xFF]} {
@@ -1025,7 +1034,7 @@ proc parse_rsrc_dir {directory} {
 				sectioncollapse
 				section "Metadata"
 				set sub_rsrc_type [uint8 "Type"]
-				set sub_rsrc_offset [int24]
+				set sub_rsrc_offset [int24 "Offset/Raw Data"]
 				sectioncollapse
 				endsection
 				set reset_location [pos]
@@ -1268,9 +1277,6 @@ proc parse_rsrc_dir {directory} {
 							entry "TODO" 0
 							# TODO: Parse
 						}
-						255 {
-							sectionname "Terminator (255)"
-						}
 						"xxxxx" {
 							# TODO: Disabled, this attempts to parse some SuperMac video data in the 2xx ID range, but does not work currently
 							# TODO: 253, 254 don't conform to this format
@@ -1381,6 +1387,9 @@ proc parse_rsrc_dir {directory} {
 							uint16 -hex "Flags??"
 							cstr macroman "Name"
 						}
+						255 {
+							sectionname "Terminator (255)"
+						}
 						default {
 							sectionname "Unknown ($sub_rsrc_type)"
 						}
@@ -1390,7 +1399,13 @@ proc parse_rsrc_dir {directory} {
 						if {$category == 3 && $drSW == 1} {
 							# TODO: It's possible other software types use this same storage, but type 1 indicates: "For example, under Category Display and cType Video atypical predefined driver software interface would be one defined by Apple to work with QuickDraw using the Macintosh Operating System frame buffers." -- page 146
 							sectionname "Video Mode ($sub_rsrc_type)"
-							vid_mode $sub_rsrc_offset
+							# TODO: We should check this everywhere, but for now this is a quick fix for the Futura SX ROM
+							if {[valid_rsrc_dir_offset $sub_rsrc_offset] == 0} {
+								sectionvalue "ERROR"
+								entry "ERROR" "Irrational offset: $sub_rsrc_offset"
+							} else {
+								vid_mode $sub_rsrc_offset
+							}
 						} elseif {$category == 4 && $ctype == 1 && $sub_rsrc_type == 128} {
 							# TODO: This only seems to apply for resource type 128...what do the others do?
 							sectionname "Ethernet Address ($sub_rsrc_type)"
