@@ -1618,11 +1618,14 @@ if {$dir_start != 0} {
 				goto $next
 				section "Resource"
 				sectioncollapse
-				# TODO: Read it, don't just skip it
 				move $combo_size
 				set next [uint32 "Next Entry Offset"]
 				set next_data [uint32 "Data Offset"]
-				#goto $next_data
+				# TODO: What is this, exactly? bbraun documents as "resource flags"
+				# TODO: There's more data in these 16 bytes, we're ignoring other stuff, too
+				move -16
+				uint8 -hex "Flags"
+				move 15
 				set type [str 4 macroman "Type"]
 				set id [uint16 "ID"]
 				uint8 -hex "Attributes"
