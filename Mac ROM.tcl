@@ -45,6 +45,7 @@ goto 0
 
 # Add support for int24s
 # TODO: A better way? Ultimately we want an int24 and HexFiend only supports uint24
+# TODO: Support -hex
 # So we read the first part to get the signing information, then read the second part and bit shift everything into place
 proc int24 {args} {
 	set first [int16]
@@ -54,6 +55,19 @@ proc int24 {args} {
 		move -3
 		entry [lindex $args 0] $value 3
 		move 3
+	}
+	return $value
+}
+
+# Read a jump vector, which consists of a jmp statement (0x4E) and an int24 address
+# TODO: Use -hex
+# TODO: Verify it's actually a valid jmp instruction
+proc jmp {args} {
+	move 1
+	if {[llength $args] > 0} {
+		set value [int24 [lindex $args 0]]
+	} else {
+		set value [int24]
 	}
 	return $value
 }
@@ -1567,7 +1581,7 @@ if {$dir_start != 0} {
 	# Search to see if this is a system board ROM
 	# https://mcosre.sourceforge.net/docs/rom_v.html
 	goto 6
-	# TODO: This appears to be a fixed value, but what is it?
+	# TODO: We're detecting the ROM by checking the reset vector, which is odd, but it's always 0x2A
 	set data [uint16]
 	if {$data == 0x2A} {
 		goto 0
@@ -1575,39 +1589,79 @@ if {$dir_start != 0} {
 		sectioncollapse
 		set checksum [uint32 -hex "Checksum"]
 		set hex_checksum [format %x $checksum]
-		# TODO: Display the reset vector value
 		move 4
 		section "Version"
 		set rom_ver [uint8 -hex "Major"]
 		# TODO: Classify by type
 		uint8 -hex "Minor"
 		# TODO: Read release value
-		goto 76
-		uint8 -hex "Sub"
-		endsection
-		# TODO: Currently we can only parse Universal ROMs -- unclear how this data was stored before
 		if {$rom_ver >= 0x6} {
+			goto 18
+			uint16 -hex "ROM Release"
+			goto 76
+			uint16 -hex "Sub Release"
+		}
+		endsection
+
+
+		goto 4
+		# TODO: Display the reset vector value
+		uint32 -hex "Reset Vector"
+
+		# TODO: Determine how to read pre-Universal ROM headers
+		if {$rom_ver >= 0x6} {
+			section "Extended Metadata (Experimental)"
+			sectioncollapse
+			goto 10
+			jmp "Start Boot Vector"
+			jmp "Bad Disk Vector"
+			move 2
+			uint8 "Patch Flags"
+			move 1
+			uint32 "Foreign OS Vector Table"
+			uint32 "Resource Header"
+			jmp "Eject Vector"
+			uint32 "Dispatch Table Offset"
+			jmp "Critical Error Vector"
+			jmp "Reset Vector"
+			uint8 "ROM Location Bit"
+			move 1
+			uint32 -hex "Checksum 0"
+			uint32 -hex "Checksum 1"
+			uint32 -hex "Checksum 2"
+			uint32 -hex "Checksum 3"
+			move 4
+			uint32 "Erase Happy Mac Vector"
+			uint32 "Toolbox Init Vector"
+			endsection
+
+			# TODO: Currently we can only parse Universal ROMs -- unclear how this data was stored before
 			goto 0x40
 			uint32 "ROM Size"
-			set filename "rom_maps/$hex_checksum"
-			if { [file exists $filename] == 1 } {
-				section "Symbols"
-				sectioncollapse
-				set map [open $filename "r"]
-				set lines [split [read $map] "\n"]
-				close $map
-				foreach line $lines {
-					# Skip empty lines
-					if {$line == ""} {
-						continue
-					}
-					set data [split $line " "]
-					scan [lindex $data 1] %x raw_offset
-					goto $raw_offset
-					entry [lindex $data 0] [lindex $data 1] 1
+		}
+		set filename "rom_maps/$hex_checksum"
+		if { [file exists $filename] == 1 } {
+			section "Symbols"
+			sectioncollapse
+			set map [open $filename "r"]
+			set lines [split [read $map] "\n"]
+			close $map
+			foreach line $lines {
+				# Skip empty lines
+				if {$line == ""} {
+					continue
 				}
-				endsection
+				set data [split $line " "]
+				scan [lindex $data 1] %x raw_offset
+				goto $raw_offset
+				entry [lindex $data 0] [lindex $data 1] 1
 			}
+			endsection
+		}
+		if {$rom_ver >= 0x6} {
+			section "Resources"
+			section "Metadata"
+			sectioncollapse
 			goto 0x1A
 			set rsrc_offset [uint32 "Resource Offset"]
 			# Unlike DeclROM portions, this is an offset from the base
@@ -1617,8 +1671,8 @@ if {$dir_start != 0} {
 			set combo_size [uint8 "Combo Size?"]
 			uint16 "Combo Version?"
 			set header_size [uint16 "Header Size"]
+			endsection
 
-			section "Resources"
 			while {$next != 0} {
 				goto $next
 				section "Resource"
