@@ -1558,6 +1558,8 @@ if {$extended_magic == 0x5A932BC7} {
 
 # TODO: This isn't quite right with Extended Format
 if {$dir_start != 0} {
+	# TODO: From here on we match a System ROM using the value of the reset vector. This is quite odd and probably imperfect.
+
 	# If we didn't find a DeclROM, then it has to be a System ROM, or it's not a supported file type
 	if {$dir_start == -1} {
 		requires 6 "00 2a"
@@ -1573,10 +1575,13 @@ if {$dir_start != 0} {
 		sectioncollapse
 		set checksum [uint32 -hex "Checksum"]
 		set hex_checksum [format %x $checksum]
+		# TODO: Display the reset vector value
 		move 4
 		section "Version"
 		set rom_ver [uint8 -hex "Major"]
+		# TODO: Classify by type
 		uint8 -hex "Minor"
+		# TODO: Read release value
 		goto 76
 		uint8 -hex "Sub"
 		endsection
