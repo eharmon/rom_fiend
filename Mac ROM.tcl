@@ -1635,10 +1635,10 @@ if {$dir_start != 0} {
 			uint32 "Toolbox Init Vector"
 			endsection
 
-			# TODO: Currently we can only parse Universal ROMs -- unclear how this data was stored before
 			goto 0x40
 			uint32 "ROM Size"
 		}
+
 		set filename "rom_maps/$hex_checksum"
 		if { [file exists $filename] == 1 } {
 			section "Symbols"
@@ -1658,6 +1658,8 @@ if {$dir_start != 0} {
 			}
 			endsection
 		}
+
+		# TODO: Currently we can only parse Universal ROM resources -- unclear how this data was stored before
 		if {$rom_ver >= 0x6} {
 			section "Resources"
 			section "Metadata"
