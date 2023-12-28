@@ -37,8 +37,7 @@ nesting.
 
 ## Supported Data Types
 - Declaration ROM (DeclROM)
-    - NuBus and PDS peripherals on 68020+ Macs. Also used for Universal System ROMs before 4.0
-      (most machines released after the IIcx and before the PowerBook 160).
+    - NuBus, PDS, and built-in peripherals on 68020+ Macs, including PowerPC.
     - These define plug-and-play parameters for devices, including memory mappings, driver support,
       and basic identification.
     - Almost all data types are supported. Unsupported entries are marked with "TODO" in the Hex
@@ -46,12 +45,13 @@ nesting.
     - Driver functions have approximated data lengths as these are difficult to compute
       automatically.
 - Extended DeclROM
-    - Board definitions in Universal System ROMs after the PowerBook 160.
+    - Built-in peripheral definitions in Universal System ROMs after the PowerBook 160 and before a
+      later PowerPC device.
     - This is a superset of the normal DeclROM, allowing for multiple data directories to be
       defined which are selected from on system boot.
     - Supports the same data types as regular DeclROMs.
 - System ROM Header
-    - Basic informtion about the System ROM. Supported for all System ROMs from the 128k to the
+    - Basic information about the System ROM. Supported for all System ROMs from the 128k to the
       final Old World ROMs.
 - System ROM Resources
     - Toolbox resources including cursors, sounds, drivers, and some device support definitions.

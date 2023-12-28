@@ -8,6 +8,15 @@
 hf_min_version_required 2.15
 big_endian
 
+#### ROM location setup
+
+# ROMs larger than 3MiB have their DeclROMs at the 3MiB boundary
+if {[len] > 3145728} {
+	set end_of_rom 3145728
+} else {
+	set end_of_rom [len]
+}
+
 #### Detect scrambled ROMs
 
 # TODO: We're not detecting all conditions, just the ones I've found
@@ -18,7 +27,7 @@ if {$magic == 0x38D46CA5} {
 	return
 }
 
-goto [expr [len]-6]
+goto [expr $end_of_rom-6]
 set magic [uint32]
 if {$magic == 0x935AC72B} {
 	entry "ERROR" "ROM must be byte-swapped from little-endian"
@@ -1532,7 +1541,7 @@ if {$magic == 0x5A932BC7} {
 	sectioncollapse
 
 	# Jump to the end where the header is
-	move [len]
+	goto $end_of_rom
 
 	# Step backwards through the header
 	move -1
@@ -1553,7 +1562,7 @@ if {$magic == 0x5A932BC7} {
 
 	move -7
 	set offset [int24 "DirectoryOffset"]
-	set dir_start [expr [len] - 20 + $offset]
+	set dir_start [expr $end_of_rom - 20 + $offset]
 	move -3
 	entry "(Computed Directory Start)" $dir_start 3
 	move 3
@@ -1566,7 +1575,7 @@ if {$magic == 0x5A932BC7} {
 
 ## Stage 2: Extended DeclROM
 
-goto [expr [len]-24]
+goto [expr $end_of_rom-24]
 set extended_magic [uint32]
 if {$extended_magic == 0x5A932BC7} {
 	section "Extended DeclROM"
@@ -1575,7 +1584,7 @@ if {$extended_magic == 0x5A932BC7} {
 	hex 4 "TestPattern"
 	move -11
 	set offset [int24 "Super DirectoryOffset"]
-	set superdir_start [expr [len] - 32 + $offset]
+	set superdir_start [expr $end_of_rom - 32 + $offset]
 	move -3
 	entry "(Computed Directory Start)" $superdir_start 3
 	move -4
