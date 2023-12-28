@@ -576,7 +576,7 @@ proc rom_version {version} {
 # Parse ROM release version into human readable
 proc rom_release {version} {
 	set major [expr $version >> 12]
-	set minor [format %x [expr ($version & 0x0F00) >> 8]]
+	set minor [expr ($version & 0x0F00) >> 8]
 	set letter [format %x [expr ($version & 0x00F0) >> 4]]
 	set build [expr $version & 0x000F]
 	set hex_version [format 0x%X $version]
