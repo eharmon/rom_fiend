@@ -533,6 +533,45 @@ proc parse_transfer_bits {} {
 	uint16_bits 3 "16-bit Transfer Supported"
 }
 
+# Read resource combo mask data into human readable
+proc combos {combo} {
+	# TODO: From tbxi, but these don't seem quite right. These seem like mask bits and not fixed values, but they're inconsistent.
+	# TODO: It's a bit odd these are so long when only the first few bits are used...
+	# TODO: This only works with masks that are 8 bytes
+	switch $combo {
+		0x0100000000000000 {
+			set name "NetBoot (0x10)"
+		}
+		0x0800000000000000 {
+			set name "Apple Talk 2.0 + NetBoot (0x08)"
+		}
+		0x2000000000000000 {
+			set name "Apple Talk 2.0 (0x20)"
+		}
+		0x3000000000000000 {
+			set name "Apple Talk 2.0 + NetBoot + FPU (0x30)"
+		}
+		0x4000000000000000 {
+			set name "Apple Talk 1.0 (0x40)"
+		}
+		0x7800000000000000 {
+			set name "Universal Resource (0x78)"
+		}
+		default {
+			set name "Unknown ($combo)"
+		}
+	}
+	return $name
+}
+
+# Parse ROM version into human readable
+proc rom_version {version} {
+	# TODO: A little goofy to use a shift and a mask...should clean this up
+	set major [expr $version >> 4]
+	set minor [expr $version & 0x0F]
+	set hex_version [format 0x%X $version]
+	return "$major.$minor ($hex_version)"
+}
 
 ## sResource type parsers
 
@@ -1591,9 +1630,11 @@ if {$dir_start != 0} {
 		set hex_checksum [format %x $checksum]
 		move 4
 		section "Version"
-		set rom_ver [uint8 -hex "Major"]
+		set rom_ver [uint8 "Machine Version"]
 		# TODO: Classify by type
-		uint8 -hex "Minor"
+		set minor_ver [uint8]
+		move -1
+		entry "ROM Version" [rom_version $minor_ver] 1
 		# TODO: Read release value
 		if {$rom_ver >= 0x6} {
 			goto 18
@@ -1626,10 +1667,10 @@ if {$dir_start != 0} {
 			jmp "Reset Vector"
 			uint8 "ROM Location Bit"
 			move 1
-			uint32 -hex "Checksum 0"
-			uint32 -hex "Checksum 1"
-			uint32 -hex "Checksum 2"
-			uint32 -hex "Checksum 3"
+			uint32 -hex "Checksum (Chunk 1)"
+			uint32 -hex "Checksum (Chunk 2)"
+			uint32 -hex "Checksum (Chunk 3)"
+			uint32 -hex "Checksum (Chunk 4)"
 			move 4
 			uint32 "Erase Happy Mac Vector"
 			uint32 "Toolbox Init Vector"
@@ -1670,8 +1711,8 @@ if {$dir_start != 0} {
 			goto $rsrc_offset
 			set next [uint32 "First Entry Offset"]
 			uint8 "Max Valid Index"
-			set combo_size [uint8 "Combo Size?"]
-			uint16 "Combo Version?"
+			set combo_size [uint8 "Combo Mask Size"]
+			uint16 "Combo Mask Version"
 			set header_size [uint16 "Header Size"]
 			endsection
 
@@ -1679,7 +1720,10 @@ if {$dir_start != 0} {
 				goto $next
 				section "Resource"
 				sectioncollapse
-				hex $combo_size "Combo Field"
+				set combo_data [hex $combo_size]
+				move -$combo_size
+				entry "Combo Mask" [combos $combo_data] $combo_size
+				move $combo_size
 				set next [uint32 "Next Entry Offset"]
 				set next_data [uint32 "Data Offset"]
 				set type [str 4 macroman "Type"]
