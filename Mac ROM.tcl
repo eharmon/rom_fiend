@@ -566,11 +566,22 @@ proc combos {combo} {
 
 # Parse ROM version into human readable
 proc rom_version {version} {
-	# TODO: A little goofy to use a shift and a mask...should clean this up
 	set major [expr $version >> 4]
 	set minor [expr $version & 0x0F]
 	set hex_version [format 0x%X $version]
+
 	return "$major.$minor ($hex_version)"
+}
+
+# Parse ROM release version into human readable
+proc rom_release {version} {
+	set major [expr $version >> 12]
+	set minor [format %x [expr ($version & 0x0F00) >> 8]]
+	set letter [format %x [expr ($version & 0x00F0) >> 4]]
+	set build [expr $version & 0x000F]
+	set hex_version [format 0x%X $version]
+
+	return "$major.$minor$letter$build ($hex_version)"
 }
 
 ## sResource type parsers
@@ -1629,7 +1640,7 @@ if {$dir_start != 0} {
 		set checksum [uint32 -hex "Checksum"]
 		set hex_checksum [format %x $checksum]
 		move 4
-		section "Version"
+		section "Versions"
 		set rom_ver [uint8 "Machine Version"]
 		# TODO: Classify by type
 		set minor_ver [uint8]
@@ -1638,7 +1649,9 @@ if {$dir_start != 0} {
 		# TODO: Read release value
 		if {$rom_ver >= 0x6} {
 			goto 18
-			uint16 -hex "ROM Release"
+			set rom_release [uint16]
+			move -2
+			entry "ROM Release" [rom_release $rom_release] 2
 			goto 76
 			uint16 -hex "Sub Release"
 		}
