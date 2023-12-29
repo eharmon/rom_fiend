@@ -1682,6 +1682,16 @@ if {$dir_start != 0} {
 			goto 76
 			uint16 "Sub Release"
 		}
+
+		# Read the date from Mac II-style ROMs
+		# No DeclROM and versions between 7.6 and 7.11
+		if {$dir_start == -1 && $minor_ver > 0x75 && $minor_ver < 0x7B} {
+			# Always look at 256k in case a ROM disk was appended
+			goto [expr 0x40000 - 1]
+			set date_length [uint8]
+			move [expr -$date_length - 1]
+			ascii $date_length "Build Date"
+		}
 		endsection
 
 
