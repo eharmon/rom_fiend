@@ -6,6 +6,8 @@ easily inspect and modify ROMs for classic Macintosh.
 It supports most commonly used ROMs for 68k and Old World PowerPC Macs, including NuBus and System
 ROMs in various capabilities.
 
+New World ROMs are also detected but cannot be parsed yet.
+
 ## Installation
 For a basic installataion, copy "Mac ROM.tcl" to your Hex Fiend template library.
 
