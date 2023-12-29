@@ -87,6 +87,14 @@ proc sort_dict_by_int_value {dict args} {
 	return [concat {*}[lsort -integer -index 1 {*}$args $lst]]
 }
 
+# Determine if a ROM fits the universal format
+proc universal_rom {version} {
+	if {$version < 0x6} {
+		return false
+	}
+	return true
+}
+
 ## Human readable text parsers
 
 # Given raw byte lane data, translate to human readable
@@ -1635,6 +1643,16 @@ if {$dir_start != 0} {
 
 	# If we didn't find a DeclROM, then it has to be a System ROM, or it's not a supported file type
 	if {$dir_start == -1} {
+		goto 0
+		set chrp_boot [ascii 11]
+		if {$chrp_boot == "<CHRP-BOOT>"} {
+			section "New World ROM"
+			entry "TODO" "TODO" 1
+			endsection
+
+			# For now we early return
+			return
+		}
 		requires 6 "00 2a"
 	}
 	# Search to see if this is a system board ROM
@@ -1656,13 +1674,13 @@ if {$dir_start != 0} {
 		move -1
 		entry "ROM Version" [rom_version $minor_ver] 1
 		# TODO: Read release value
-		if {$rom_ver >= 0x6} {
+		if {[universal_rom $rom_ver]} {
 			goto 18
 			set rom_release [uint16]
 			move -2
 			entry "ROM Release" [rom_release $rom_release] 2
 			goto 76
-			uint16 -hex "Sub Release"
+			uint16 "Sub Release"
 		}
 		endsection
 
@@ -1672,7 +1690,7 @@ if {$dir_start != 0} {
 		uint32 -hex "Reset Vector"
 
 		# TODO: Determine how to read pre-Universal ROM headers
-		if {$rom_ver >= 0x6} {
+		if {[universal_rom $rom_ver]} {
 			section "Extended Metadata (Experimental)"
 			sectioncollapse
 			goto 10
@@ -1723,7 +1741,7 @@ if {$dir_start != 0} {
 		}
 
 		# TODO: Currently we can only parse Universal ROM resources -- unclear how this data was stored before
-		if {$rom_ver >= 0x6} {
+		if {[universal_rom $rom_ver]} {
 			section "Resources"
 			section "Metadata"
 			sectioncollapse
