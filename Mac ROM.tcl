@@ -42,6 +42,8 @@ if {$magic == 0x935AC72B} {
 
 # Reset state
 goto 0
+# TODO: It's unfortunate this is a global
+set rom_date -1
 
 #### File matching
 
@@ -633,6 +635,10 @@ proc vendor_info {offset} {
 				cstr "macroman" "PartNum"
 			}
 			5 {
+				# Stash the date location for later
+				global rom_date
+				set rom_date [pos]
+
 				cstr "macroman" "Date"
 			}
 		}
@@ -1691,6 +1697,10 @@ if {$dir_start != 0} {
 			set date_length [uint8]
 			move [expr -$date_length - 1]
 			ascii $date_length "Build Date"
+		} elseif {$rom_date != -1} {
+			# Borrow the build date from the DeclROM if we found one
+			goto $rom_date
+			cstr "macroman" "Build Date (DeclROM)"
 		}
 		endsection
 
