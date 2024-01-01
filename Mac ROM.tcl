@@ -589,7 +589,7 @@ proc rom_version {version} {
 	set minor [expr $version & 0x0F]
 	set hex_version [format 0x%X $version]
 
-	return "$major.$minor ($hex_version)"
+	return "$major.$minor ($version/$hex_version)"
 }
 
 # Parse ROM release version into human readable
