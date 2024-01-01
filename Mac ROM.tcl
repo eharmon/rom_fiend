@@ -1737,7 +1737,8 @@ if {$dir_start != 0} {
 			endsection
 
 			goto 0x40
-			uint32 "ROM Size"
+			set rom_size [uint32 "ROM Size"]
+
 		}
 
 		set filename "rom_maps/$hex_checksum"
@@ -1869,6 +1870,22 @@ if {$dir_start != 0} {
 			set edisk_count [expr $edisk_count + 1]
 		}
 		set edisk_offset [expr $edisk_offset + 0x10000]
+	}
+
+	# TODO: Most of the time these images are just catted at the end, but technically the offset
+	# can vary. We're just making a best effort.
+	# TODO: We don't read the length either, so we're just reading all the way to the end
+	# TODO: Compression could break this, but it's unlikely
+	if {[universal_rom $rom_ver] && [len] > $rom_size} {
+		goto $rom_size
+		set hfs_magic [uint16]
+		if {$hfs_magic == 0x4C4B} {
+			move -2
+			section "bbraun/BMOW Rom Disk"
+			sectioncollapse
+			bytes eof "Disk Image (Approximate)"
+			endsection
+		}
 	}
 
 	# Because every offset after the directory is a uint, we know everything before it must be outside the DeclROM
