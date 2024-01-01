@@ -63,6 +63,8 @@ nesting.
       specified by the symbol, with no body, as that cannot be easily determined without
       decompiling each function.
     - Supports a subset of 68k ROMs. The setion will only be present if matching symbols are found.
+- EDisk images
+    - Embedded ROM disk images as provided by the Mac Classic.
 
 ## Unsupported Data Types
 - System ROM tables
