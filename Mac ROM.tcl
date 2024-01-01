@@ -1820,6 +1820,57 @@ if {$dir_start != 0} {
 		endsection
 	}
 
+	# Search for EDisks
+	# New Technical Notes HW 13 - Macintosh Portable ROM Expansion
+	# These can occur at any 64k boundary
+	set edisk_offset 0
+	set edisk_count 0
+	while {$edisk_offset < [len]} {
+		goto $edisk_offset
+		move 132
+		set edisk_magic [bytes 12]
+		if {$edisk_magic == "EDisk Gary D"} {
+			section "EDisk ($edisk_count)"
+			sectioncollapse
+			goto $edisk_offset
+			section "Metadata"
+			sectioncollapse
+			bytes 128 "Scratch Space"
+			uint16 "Block Size"
+			uint16 "Version"
+			hex 12 "EDisk Magic"
+			uint32 "Device Size"
+			# TODO: Read times correctly
+			uint32 "Format Time"
+			uint32 "Format Ticks"
+			# TODO: Read checksum field
+			uint32 "Format Checksum Offset"
+			set data_start [uint32 "Data Start Offset"]
+			set data_end [uint32 "Data End Offset"]
+			uint32 "Media Icon Offset"
+			uint32 "Drive Icon Offset"
+			# TODO: Document better
+			uint32 "'Get Info Where' String Offset"
+			uint32 "Drive Info"
+			endsection
+
+			# Disk images can span past the end of the image and "virtually" appear larger(!), so
+			# cap the read.
+			# Theoretically you could do wild tricks with this and let memory wraparound map more
+			# data into the image but that's pretty unlikely.
+			if {[expr $edisk_offset + $data_start + $data_end] > [len]} {
+				set data_end [expr [len] - $edisk_offset]
+			}
+
+			goto $edisk_offset
+			move $data_start
+			bytes [expr $data_end - $data_start] "Disk Image"
+			endsection
+			set edisk_count [expr $edisk_count + 1]
+		}
+		set edisk_offset [expr $edisk_offset + 0x10000]
+	}
+
 	# Because every offset after the directory is a uint, we know everything before it must be outside the DeclROM
 	# TODO: That's not true? In practice it seems the other data is always after the directory, but it doesn't seem like it has to be
 	goto 0
