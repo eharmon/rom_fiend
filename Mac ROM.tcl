@@ -19,7 +19,7 @@ if {[len] > 3145728} {
 	set end_of_rom [len]
 }
 
-#### Detect scrambled ROMs
+#### Detect scrambled ROMs and find end of DeclROM
 
 # TODO: We're not detecting all conditions, just the ones I've found
 goto 2
@@ -29,17 +29,24 @@ if {$magic == 0x38D46CA5} {
 	return
 }
 
-goto [expr $end_of_rom-6]
-set magic [uint32]
-if {$magic == 0x935AC72B} {
-	entry "ERROR" "ROM must be byte-swapped from little-endian"
-	return
-} elseif {$magic == 0xA56CD438} {
-	entry "ERROR" "ROM must be XOR'd with 0xFF"
-	return
-} elseif {$magic == 0x7878} {
-	entry "ERROR" "ROM is repeated across bytelanes, take every 4th byte"
-	return
+set offset [len]
+while {$offset > 0} {
+	goto [expr $offset - 6]
+	set magic [uint32]
+	if {$magic == 0x5A932BC7} {
+		set end_of_rom [expr $offset]
+		break
+	} elseif {$magic == 0x935AC72B} {
+		entry "ERROR" "ROM must be byte-swapped from little-endian"
+		return
+	} elseif {$magic == 0xA56CD438} {
+		entry "ERROR" "ROM must be XOR'd with 0xFF"
+		return
+	} elseif {$magic == 0x7878} {
+		entry "ERROR" "ROM is repeated across bytelanes, take every 4th byte"
+		return
+	}
+	set offset [expr $offset - 0x10000]
 }
 
 # Reset state
@@ -1648,6 +1655,8 @@ if {$extended_magic == 0x5A932BC7} {
 # TODO: This isn't quite right with Extended Format
 if {$dir_start != 0} {
 	# TODO: From here on we match a System ROM using the value of the reset vector. This is quite odd and probably imperfect.
+
+	set rom_ver ""
 
 	# If we didn't find a DeclROM, then it has to be a System ROM, or it's not a supported file type
 	if {$dir_start == -1} {
