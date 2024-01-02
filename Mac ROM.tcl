@@ -11,6 +11,8 @@ big_endian
 #### ROM location setup
 
 # ROMs larger than 3MiB have their DeclROMs at the 3MiB boundary
+# TODO: For some DeclROMs and System ROMs there's extra data at the end, we need to read the
+# variety of possible locations instead of just the end.
 if {[len] > 3145728} {
 	set end_of_rom 3145728
 } else {
@@ -1824,16 +1826,32 @@ if {$dir_start != 0} {
 	# Search for EDisks
 	# New Technical Notes HW 13 - Macintosh Portable ROM Expansion
 	# These can occur at any 64k boundary
+	# TODO: Verify Ginty works correctly
 	set edisk_offset 0
 	set edisk_count 0
 	while {$edisk_offset < [len]} {
 		goto $edisk_offset
 		move 132
 		set edisk_magic [bytes 12]
+
 		if {$edisk_magic == "EDisk Gary D"} {
-			section "EDisk ($edisk_count)"
+			set edisk_type "edisk"
+		} elseif {$edisk_magic == "Ginty HYGWGA"} {
+			set edisk_type "ginty"
+		} else {
+			set edisk_type ""
+		}
+
+		if {$edisk_type != ""} {
+			if {$edisk_type == "edisk"} {
+				section "EDisk ($edisk_count)"
+			} else {
+				section "EDisk (Ginty) ($edisk_count)"
+			}
 			sectioncollapse
+
 			goto $edisk_offset
+
 			section "Metadata"
 			sectioncollapse
 			bytes 128 "Scratch Space"
@@ -1853,6 +1871,14 @@ if {$dir_start != 0} {
 			# TODO: Document better
 			uint32 "'Get Info Where' String Offset"
 			uint32 "Drive Info"
+			if {$edisk_type == "edisk"} {
+				bytes 328 "Reserved"
+			} else {
+				# TODO: Read data
+				uint32 "EDisk Driver Offset"
+				uint32 "Loader Patch Code Offset"
+				bytes 320 "Reserved"
+			}
 			endsection
 
 			# Disk images can span past the end of the image and "virtually" appear larger(!), so
