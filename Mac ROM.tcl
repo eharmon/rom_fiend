@@ -98,12 +98,20 @@ proc sort_dict_by_int_value {dict args} {
 	return [concat {*}[lsort -integer -index 1 {*}$args $lst]]
 }
 
-# Determine if a ROM fits the universal format
+# Detemrine if a ROM uses the universal format
 proc universal_rom {version} {
 	if {$version < 0x6} {
 		return false
 	}
 	return true
+}
+
+# Determine if a ROM uses the legacy resources format
+proc legacy_resources {version} {
+	if {$version >= 0x75 && $version <= 0x7C} {
+		return true
+	}
+	return false
 }
 
 ## Human readable text parsers
@@ -1656,7 +1664,7 @@ if {$extended_magic == 0x5A932BC7} {
 if {$dir_start != 0} {
 	# TODO: From here on we match a System ROM using the value of the reset vector. This is quite odd and probably imperfect.
 
-	set rom_ver ""
+	set machine ""
 
 	# If we didn't find a DeclROM, then it has to be a System ROM, or it's not a supported file type
 	if {$dir_start == -1} {
@@ -1695,16 +1703,22 @@ if {$dir_start != 0} {
 		move 4
 		section "Versions"
 		# TODO: Also format in the $XXXX format used in some places
-		set rom_ver [uint8 "Machine"]
+		set machine [uint8 "Machine"]
+		move -1
+		set family_version [uint16]
+		move -2
+		entry "Family Version" [format $%04X $family_version] 2
+		move 2
+		move -1
 		# TODO: Classify by type
 		set minor_ver [uint8]
 		move -1
 		entry "ROM Version" [rom_version $minor_ver] 1
-		if {[universal_rom $rom_ver]} {
+		if {[universal_rom $machine]} {
 			goto 18
 			set rom_release [uint16]
 			move -2
-			entry "ROM Release" [rom_release $rom_release] 2
+			entry "Minor Version" [rom_release $rom_release] 2
 			goto 76
 			uint16 "Sub Release"
 		}
@@ -1733,8 +1747,14 @@ if {$dir_start != 0} {
 		# TODO: Display the reset vector value
 		uint32 -hex "Reset Vector"
 
+		# Both ROM eras support resource data offset
+		if {[universal_rom $machine] || [legacy_resources $minor_ver]} {
+			goto 0x1a
+			set resource_data_offset [uint32 "Resource Data Offset"]
+		}
+
 		# TODO: Determine how to read pre-Universal ROM headers
-		if {[universal_rom $rom_ver]} {
+		if {[universal_rom $machine]} {
 			section "Extended Metadata (Experimental)"
 			sectioncollapse
 			goto 10
@@ -1744,7 +1764,7 @@ if {$dir_start != 0} {
 			uint8 "Patch Flags"
 			move 1
 			uint32 "Foreign OS Vector Table"
-			uint32 "Resource Header"
+			move 4
 			jmp "Eject Vector"
 			uint32 "Dispatch Table Offset"
 			jmp "Critical Error Vector"
@@ -1785,8 +1805,7 @@ if {$dir_start != 0} {
 			endsection
 		}
 
-		# TODO: Currently we can only parse Universal ROM resources -- unclear how this data was stored before
-		if {[universal_rom $rom_ver]} {
+		if {[universal_rom $machine]} {
 			section "Resources"
 			section "Metadata"
 			sectioncollapse
@@ -1838,6 +1857,46 @@ if {$dir_start != 0} {
 					bytes 32 "Cursor Mask"
 					bytes 4 "Cursor Point"
 				}
+				endsection
+			}
+			endsection
+		} elseif {[legacy_resources $minor_ver]} {
+			goto $resource_data_offset
+			move 28
+			section "Resources"
+			section "Metadata"
+			sectioncollapse
+			set typelist_offset [uint16 "Type List Offset"]
+			goto $resource_data_offset
+			move 4
+			move $typelist_offset
+			set num [uint16 "Num Types"]
+			endsection
+			for {set i 0} {$i <= $num} {incr i} {
+				section "Resource"
+				sectioncollapse
+				section "Metadata"
+				sectioncollapse
+				set type [ascii 4 "Type"]
+				set num_resources [uint16 "Num Resources (0 indexed)"]
+				set list_offset [uint16 "List Offset"]
+				endsection
+				sectionname "$type"
+				set cur_pos [pos]
+					goto [expr $resource_data_offset + $typelist_offset + $list_offset + 4]
+				for {set j 0} {$j <= $num_resources} {incr j} {
+					section "Resource"
+					sectioncollapse
+					set id [uint16 "ID"]
+					# TODO: Properly read the resource data
+					move 1
+					move 3
+					#uint24 "Attribute Offset"
+					sectionname "$type ($id)"
+					move 6
+					endsection
+				}
+				goto $cur_pos
 				endsection
 			}
 			endsection
@@ -1924,7 +1983,7 @@ if {$dir_start != 0} {
 	# can vary. We're just making a best effort.
 	# TODO: We don't read the length either, so we're just reading all the way to the end
 	# TODO: Compression could break this, but it's unlikely
-	if {[universal_rom $rom_ver] && [len] > $rom_size} {
+	if {[universal_rom $machine] && [len] > $rom_size} {
 		goto $rom_size
 		set hfs_magic [uint16]
 		if {$hfs_magic == 0x4C4B} {
