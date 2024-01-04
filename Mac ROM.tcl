@@ -596,9 +596,9 @@ proc combos {combo} {
 proc rom_version {version} {
 	set major [expr $version >> 4]
 	set minor [expr $version & 0x0F]
-	set hex_version [format 0x%X $version]
+	set hex_version [format %X $version]
 
-	return "$major.$minor ($version/$hex_version)"
+	return "$major.$minor ($$hex_version/$version)"
 }
 
 # Parse ROM release version into human readable
@@ -1670,27 +1670,36 @@ if {$dir_start != 0} {
 			# For now we early return
 			return
 		}
-		requires 6 "00 2a"
+		# TODO: Requirements have been temporarily disabled to support Twiggy ROMs
+		#requires 6 "00 2a"
 	}
 	# Search to see if this is a system board ROM
 	# https://mcosre.sourceforge.net/docs/rom_v.html
 	goto 6
 	# TODO: We're detecting the ROM by checking the reset vector, which is odd, but it's always 0x2A
 	set data [uint16]
-	if {$data == 0x2A} {
+	if {$data == 0x2A || $data == 0x16} {
 		goto 0
 		section "System ROM"
 		sectioncollapse
-		set checksum [uint32 -hex "Checksum"]
-		set hex_checksum [format %x $checksum]
+
+		# TODO: This is a guess, we know the early Twiggy ROMs with a different reset vector don't have a checksum
+		if {$data == 0x2A} {
+			set checksum [uint32 -hex "Checksum"]
+			set hex_checksum [format %x $checksum]
+		} else {
+			set hex_checksum "none"
+			move 4
+		}
+
 		move 4
 		section "Versions"
-		set rom_ver [uint8 "Machine Version"]
+		# TODO: Also format in the $XXXX format used in some places
+		set rom_ver [uint8 "Machine"]
 		# TODO: Classify by type
 		set minor_ver [uint8]
 		move -1
 		entry "ROM Version" [rom_version $minor_ver] 1
-		# TODO: Read release value
 		if {[universal_rom $rom_ver]} {
 			goto 18
 			set rom_release [uint16]
@@ -1700,11 +1709,15 @@ if {$dir_start != 0} {
 			uint16 "Sub Release"
 		}
 
-		# Read the date from Mac II-style ROMs
-		# No DeclROM and versions between 7.6 and 7.11
-		if {$dir_start == -1 && $minor_ver > 0x75 && $minor_ver < 0x7B} {
-			# Always look at 256k in case a ROM disk was appended
-			goto [expr 0x40000 - 1]
+		# Read the date from old-style ROMs
+		# No DeclROM and versions between 7.5 and 7.11
+		if {$dir_start == -1 && $minor_ver >= 0x75 && $minor_ver < 0x7B} {
+			# Always look at the 256k or 512k offsets in case a ROM disk was appended
+			if {$minor_ver == 0x75} {
+				goto [expr 0x20000 - 1]
+			} else {
+				goto [expr 0x40000 - 1]
+			}
 			set date_length [uint8]
 			move [expr -$date_length - 1]
 			ascii $date_length "Build Date"
