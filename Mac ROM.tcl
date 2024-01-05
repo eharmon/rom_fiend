@@ -1867,7 +1867,9 @@ if {$dir_start != 0} {
 			section "Metadata"
 			sectioncollapse
 			set typelist_offset [uint16 "Type List Offset"]
+			set namelist_offset [uint16 "Name List Offset"]
 			goto $resource_data_offset
+			# TODO: Why 4?
 			move 4
 			move $typelist_offset
 			set num [uint16 "Num Types"]
@@ -1883,16 +1885,25 @@ if {$dir_start != 0} {
 				endsection
 				sectionname "$type"
 				set cur_pos [pos]
-					goto [expr $resource_data_offset + $typelist_offset + $list_offset + 4]
+				goto [expr $resource_data_offset + $typelist_offset + $list_offset + 4]
 				for {set j 0} {$j <= $num_resources} {incr j} {
 					section "Resource"
 					sectioncollapse
 					set id [uint16 "ID"]
-					# TODO: Properly read the resource data
-					move 1
-					move 3
-					#uint24 "Attribute Offset"
+					set name_offset [uint16 "Name Offset"]
 					sectionname "$type ($id)"
+					if {$name_offset != 0xFFFF} {
+						set res_pos [pos]
+						# TODO: Why plus 4 again?
+						goto [expr $resource_data_offset + $namelist_offset + $name_offset + 4]
+						set name_length [uint8]
+						set name [str $name_length "macroman" "Name"]
+						sectionname "$type \[$name\] ($id)"
+						goto $res_pos
+					}
+					# TODO: Properly read the resource data
+					move 2
+					#uint24 "Attribute Offset"
 					move 6
 					endsection
 				}
