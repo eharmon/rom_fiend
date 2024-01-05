@@ -1862,16 +1862,16 @@ if {$dir_start != 0} {
 			endsection
 		} elseif {[legacy_resources $minor_ver]} {
 			goto $resource_data_offset
+			# TODO: Why 28? Inside Macintosh indicates this should be 16+4+2+2 = 24
+			#  It seems probable this starts with the Single Resource data (Figure 1-13) instead of a real resource fork
+			#  Thus we have the length, then a copy of the resource header (16), 6 reserved bytes, then our offsets
+			#  == 28
 			move 28
 			section "Resources"
 			section "Metadata"
 			sectioncollapse
 			set typelist_offset [uint16 "Type List Offset"]
 			set namelist_offset [uint16 "Name List Offset"]
-			goto $resource_data_offset
-			# TODO: Why 4?
-			move 4
-			move $typelist_offset
 			set num [uint16 "Num Types"]
 			endsection
 			for {set i 0} {$i <= $num} {incr i} {
@@ -1896,15 +1896,22 @@ if {$dir_start != 0} {
 						set res_pos [pos]
 						# TODO: Why plus 4 again?
 						goto [expr $resource_data_offset + $namelist_offset + $name_offset + 4]
-						set name_length [uint8]
+						set name_length [uint8 "Name Length"]
 						set name [str $name_length "macroman" "Name"]
 						sectionname "$type \[$name\] ($id)"
 						goto $res_pos
 					}
-					# TODO: Properly read the resource data
-					move 2
-					#uint24 "Attribute Offset"
-					move 6
+					uint8 -hex "Attributes"
+					set rsrc_offset [uint24 "Data Offset"]
+					set res_pos [pos]
+					# Length includes the attributes and offset, so subtract
+					goto [expr $rsrc_offset - 6]
+					set meh [uint16 "Resource Data Length"]
+					# Length include the data length so subtract
+					bytes [expr $meh - 2] "Data"
+					goto $res_pos
+					# This is reserved, so skip
+					move 4
 					endsection
 				}
 				goto $cur_pos

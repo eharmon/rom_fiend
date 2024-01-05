@@ -57,7 +57,7 @@ nesting.
       final Old World ROMs.
 - System ROM Resources
     - Toolbox resources including cursors, sounds, drivers, and some device support definitions.
-    - Supported for all Universal System ROMs (IIci and newer) and Old World ROMs.
+    - Supported for all ROMs for the Mac Plus and newer.
 - System ROM Symbols
     - The table of symbols as defined in MPW 3.5, extracted by @cy384. This points to the address
       specified by the symbol, with no body, as that cannot be easily determined without
