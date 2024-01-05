@@ -1906,9 +1906,9 @@ if {$dir_start != 0} {
 					set res_pos [pos]
 					# Length includes the attributes and offset, so subtract
 					goto [expr $rsrc_offset - 6]
-					set meh [uint16 "Resource Data Length"]
+					set data_length [uint16 "Resource Data Length"]
 					# Length include the data length so subtract
-					bytes [expr $meh - 2] "Data"
+					bytes [expr $data_length - 2] "Data"
 					goto $res_pos
 					# This is reserved, so skip
 					move 4
