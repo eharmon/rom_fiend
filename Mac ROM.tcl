@@ -1147,7 +1147,7 @@ proc parse_rsrc_dir {directory} {
 		section "Metadata"
 		sectioncollapse
 		set rsrc_type [uint8 "Type"]
-		set rsrc_offset [int24]
+		set rsrc_offset [int24 "Offset"]
 		endsection
 		set location [pos]
 		if {$rsrc_type == 0xFF} {
@@ -1408,118 +1408,40 @@ proc parse_rsrc_dir {directory} {
 							entry "TODO" 0
 							# TODO: Parse
 						}
-						"xxxxx" {
-							# TODO: Disabled, this attempts to parse some SuperMac video data in the 2xx ID range, but does not work currently
-							# TODO: 253, 254 don't conform to this format
-							#{(20[0-9]|2[1-4][0-9]|25[0-4])} {}
-							# TODO: Hax hax hax for SuperMac
-							sectionname "$sub_rsrc_type ?????"
-							move $sub_rsrc_offset
-							uint32 "ID???"
-							uint16 -hex "Flags??"
-							uint16 -hex "Flags??"
-							# TODO: Always 5002??
-							#uint16 -hex "?????"
-							move 2
-							# TODO: Always 0600??
-							#uint16 -hex "?????"
-							move 2
-							# TODO: Always 4F010??
-							#uint16 -hex "?????"
-							move 2
-							# TODO: Always 0101??
-							#uint16 -hex "?????"
-							move 2
-							# TODO: Always 000F??
-							#uint16 -hex "?????"
-							move 2
-							uint16 -hex "Flags??"
-							uint16 -hex "Flags??"
-							uint16 "ID???"
-							# TODO: Always 0002???
-							#uint16 -hex "?????"
-							move 2
-							uint16 "ID???"
-							uint16 "VBlank-related??"
-							uint16 "VBlank-related??"
-							# TODO: Always FFFF???
-							#uint16 "?????"
-							move 2
-							# TODO: Always FFFF???
-							#uint16 "?????"
-							move 2
-							uint16 -hex "Gamma????"
-							# TODO: Always FFFF???
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always FFFF???
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always 0040?
-							#uint16 "?????"
-							move 2
-							uint16 -hex "Flags??"
-							# TODO: Always 0551?
-							#uint16 "?????"
-							move 2
-							# TODO: Always 8005?
-							#uint16 "?????"
-							move 2
-							# TODO: Always 0500?
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always E0C0?
-							#uint16 "?????"
-							move 2
-							# TODO: Always B576?
-							#uint16 "?????"
-							move 2
-							# TODO: Always 256D?
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							# TODO: Always 0081?
-							#uint16 "?????"
-							move 2
-							# TODO: Always 0073?
-							#uint16 "?????"
-							move 2
-							# TODO: Always zero
-							#uint16 "?????"
-							move 2
-							uint16 "HRes"
-							uint16 "VRes"
-							uint16 -hex "Flags??"
-							cstr macroman "Name"
-						}
-						255 {
-							sectionname "Terminator (255)"
+						2* {
+							# TODO: This whole nesting is kinda gross
+							switch -regexp $sub_rsrc_type {
+								{(20[0-9]|2[1-4][0-9])} {
+									sectionname "SuperMac Timing ($sub_rsrc_type)"
+									move $sub_rsrc_offset
+									uint32 "Length"
+									uint8 "Clock"
+									bytes 3 "Unknown"
+									bytes 8 "Unknown BSR Data"
+									uint16 "Horizontal End Sync"
+									uint16 "Horizontal End Blank"
+									uint16 "Horizontal Start Blank"
+									uint16 "Horizontal Total"
+									uint16 "Vertical End Sync"
+									uint16 "Vertical End Blank"
+									uint16 "Vertical Start Blank"
+									uint16 "Vertical Total"
+									bytes 44 "Unknown SMT02 Data"
+									bytes 6 "Unknown SQD Data"
+									uint16 "Horizontal Resolution"
+									uint16 "Vertical Resolution"
+									uint8 "sRsrc ID"
+									bytes 1 "Unknown"
+									set timing_name [cstr macroman "Name"]
+									sectionname "Timing \[$timing_name\] ($sub_rsrc_type)"
+								}
+								255 {
+									sectionname "Terminator (255)"
+								}
+								default {
+									sectionname "Unknown ($sub_rsrc_type)"
+								}
+							}
 						}
 						default {
 							sectionname "Unknown ($sub_rsrc_type)"
