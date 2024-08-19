@@ -323,8 +323,16 @@ proc resolve_ctype {category ctype} {
 					# Referenced by TattleTech and the Mac Mainframe II
 					set type "IBM 3270 (8)"
 				}
+				10 {
+					# Apple Coax/Twinax Card
+					set type "IBM 5250 (10)"
+				}
 				11 {
 					set type "Centronics (11)"
+				}
+				19 {
+					# Apple Coax/Twinax Card
+					set type "IBM 3270 (19)"
 				}
 				27 {
 					# SCii RNIS
