@@ -994,7 +994,6 @@ proc vid_mode {offset} {
 				uint16 "vpPackType"
 				# Table 9-2 is incorrect, this is a full byte
 				uint32 "vpPackSize"
-				# TODO: Decode these properly instead of leaving fixed-point hex
 				fixed32 "vpHRes"
 				fixed32 "vpVRes"
 				uint16 "vpPixelType"
