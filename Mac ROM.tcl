@@ -986,10 +986,10 @@ proc vid_mode {offset} {
 				uint32 "Record Size"
 				uint32 "vpBaseOffset"
 				uint16 "vpRowBytes"
-				uint16 "vpBounds(0)"
-				uint16 "vpBounds(1)"
-				uint16 "vpBounds(2)"
-				uint16 "vpBounds(3)"
+				set bounds0 [uint16 "vpBounds(0)"]
+				set bounds1 [uint16 "vpBounds(1)"]
+				set bounds2 [uint16 "vpBounds(2)"]
+				set bounds3 [uint16 "vpBounds(3)"]
 				uint16 "vpVersion"
 				uint16 "vpPackType"
 				# Table 9-2 is incorrect, this is a full byte
@@ -1034,6 +1034,11 @@ proc vid_mode {offset} {
 		goto $vid_mode_rsrc_entry_return
 	}
 	goto $temp_location
+
+	set height [expr $bounds2 - $bounds0]
+	set width [expr $bounds3 - $bounds1]
+
+	return "$width x $height"
 }
 
 # Examine a block describing an executable section
@@ -1530,7 +1535,9 @@ proc parse_rsrc_dir {directory} {
 								sectionvalue "ERROR"
 								entry "ERROR" "Irrational offset: $sub_rsrc_offset"
 							} else {
-								vid_mode $sub_rsrc_offset
+								set vid_bounds [vid_mode $sub_rsrc_offset]
+								# TODO: Redundantly setting part of the section name
+								sectionname "Video Mode \[$vid_bounds\] ($sub_rsrc_type)"
 							}
 						} elseif {$category == 4 && $ctype == 1 && $sub_rsrc_type == 128} {
 							# TODO: This only seems to apply for resource type 128...what do the others do?
