@@ -79,6 +79,19 @@ proc int24 {args} {
 	return $value
 }
 
+# Add support for 32-bit fixed point fractionals
+proc fixed32 {args} {
+	set whole [uint16]
+	set fraction [uint16]
+	set value [expr $whole + $fraction*0.1]
+	if {[llength $args] > 0} {
+		move -4
+		entry [lindex $args 0] $value 4
+		move 4
+	}
+	return $value
+}
+
 # Read a jump vector, which consists of a jmp statement (0x4E) and an int24 address
 # TODO: Use -hex
 # TODO: Verify it's actually a valid jmp instruction
@@ -982,8 +995,8 @@ proc vid_mode {offset} {
 				# Table 9-2 is incorrect, this is a full byte
 				uint32 "vpPackSize"
 				# TODO: Decode these properly instead of leaving fixed-point hex
-				uint32 -hex "vpHRes"
-				uint32 -hex "vpVRes"
+				fixed32 "vpHRes"
+				fixed32 "vpVRes"
 				uint16 "vpPixelType"
 				uint16 "vpPixelSize"
 				uint16 "vpCmpCount"
