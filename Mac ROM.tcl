@@ -661,7 +661,7 @@ proc vendor_info {offset} {
 		# NuBus documentation, page 178 (219)
 		switch $vendor_rsrc_type {
 			1 {
-				cstr "macroman" "VendorID"
+				set vendorid [cstr "macroman" "VendorID"]
 			}
 			2 {
 				cstr "macroman" "SerialNum"
@@ -684,6 +684,7 @@ proc vendor_info {offset} {
 	}
 	goto $temp_location
 	endsection
+	return $vendorid
 }
 
 # Examine a driver directory for directoriesdata
@@ -1326,7 +1327,7 @@ proc parse_rsrc_dir {directory} {
 						}
 						36 {
 							sectionname "VendorInfo (36)"
-							vendor_info $sub_rsrc_offset
+							set vendorid [vendor_info $sub_rsrc_offset]
 						}
 						37 {
 							# TODO: Confirm
@@ -1409,31 +1410,36 @@ proc parse_rsrc_dir {directory} {
 							# TODO: Parse
 						}
 						2* {
-							# TODO: This whole nesting is kinda gross
+							# TODO: This whole section layout is kinda gross
 							switch -regexp $sub_rsrc_type {
 								{(20[0-9]|2[1-4][0-9])} {
-									sectionname "SuperMac Timing ($sub_rsrc_type)"
-									move $sub_rsrc_offset
-									uint32 "Length"
-									uint8 "Clock"
-									bytes 3 "Unknown"
-									bytes 8 "Unknown BSR Data"
-									uint16 "Horizontal End Sync"
-									uint16 "Horizontal End Blank"
-									uint16 "Horizontal Start Blank"
-									uint16 "Horizontal Total"
-									uint16 "Vertical End Sync"
-									uint16 "Vertical End Blank"
-									uint16 "Vertical Start Blank"
-									uint16 "Vertical Total"
-									bytes 44 "Unknown SMT02 Data"
-									bytes 6 "Unknown SQD Data"
-									uint16 "Horizontal Resolution"
-									uint16 "Vertical Resolution"
-									uint8 "sRsrc ID"
-									bytes 1 "Unknown"
-									set timing_name [cstr macroman "Name"]
-									sectionname "Timing \[$timing_name\] ($sub_rsrc_type)"
+									# Special timing data for SuperMac cards
+									if {$vendorid == "SuperMac Technology"} {
+										sectionname "SuperMac Timing ($sub_rsrc_type)"
+										move $sub_rsrc_offset
+										uint32 "Length"
+										uint8 "Clock"
+										bytes 3 "Unknown"
+										bytes 8 "Unknown BSR Data"
+										uint16 "Horizontal End Sync"
+										uint16 "Horizontal End Blank"
+										uint16 "Horizontal Start Blank"
+										uint16 "Horizontal Total"
+										uint16 "Vertical End Sync"
+										uint16 "Vertical End Blank"
+										uint16 "Vertical Start Blank"
+										uint16 "Vertical Total"
+										bytes 44 "Unknown SMT Data"
+										bytes 6 "Unknown SQD Data"
+										uint16 "Horizontal Resolution"
+										uint16 "Vertical Resolution"
+										uint8 "sRsrc ID"
+										bytes 1 "Unknown"
+										set timing_name [cstr macroman "Name"]
+										sectionname "SuperMac Timing \[$timing_name\] ($sub_rsrc_type)"
+									} else {
+										sectionname "Unknown ($sub_rsrc_type)"
+									}
 								}
 								255 {
 									sectionname "Terminator (255)"
