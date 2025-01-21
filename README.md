@@ -46,6 +46,7 @@ nesting.
       Fiend view.
     - Driver functions have approximated data lengths as these are difficult to compute
       automatically.
+    - For some SuperMac display cards, additional proprietary video timing data is available.
 - Extended DeclROM
     - Built-in peripheral definitions in Universal System ROMs after the PowerBook 160 and before a
       later PowerPC device.
