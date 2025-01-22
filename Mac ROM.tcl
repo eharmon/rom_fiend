@@ -393,6 +393,11 @@ proc resolve_ctype {category ctype} {
 					# Radius Rocket
 					set type "68040 (5)"
 				}
+				11 {
+					# MacIvory III: https://oldvcr.blogspot.com/2024/10/refurb-weekend-symbolics-macivory-lisp.html
+					# TODO: It's possible this is all Lisp processors
+					set type "Symbolics Ivory (11)"
+				}
 				20 {
 					# Team ASA Raven
 					set type "i860 (20)"
@@ -1414,6 +1419,7 @@ proc parse_rsrc_dir {directory} {
 							switch -regexp $sub_rsrc_type {
 								{(20[0-9]|2[1-4][0-9])} {
 									# Special timing data for SuperMac cards
+									# TODO: This misparses early cards which appear to use a different format in a different set of sResources
 									if {$vendorid == "SuperMac Technology"} {
 										sectionname "SuperMac Timing ($sub_rsrc_type)"
 										move $sub_rsrc_offset
