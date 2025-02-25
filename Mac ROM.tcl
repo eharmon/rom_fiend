@@ -456,6 +456,17 @@ proc resolve_ctype {category ctype} {
 				}
 			}
 		}
+		17 {
+			switch $ctype {
+				# ROMEqu.a
+				256 {
+					set type "Debugger (256)"
+				}
+				default {
+					set type "Unknown ($ctype)"
+				}
+			}
+		}
 		32 {
 			# PowerBookDuo System page 184 (204)
 			switch $ctype {
@@ -482,6 +493,10 @@ proc resolve_drsw {drSW} {
 	switch $drSW {
 		1 {
 			set type "Apple (1)"
+		}
+		260 {
+			# ROMEqu.a
+			set type "MacsBug (260)"
 		}
 		65535 {
 			# Card docs page 173
